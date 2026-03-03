@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wiwans</title>
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:Arial;}
+body{height:100vh;background:#0f172a;color:white;display:flex;}
+
+/* LOGIN */
+.auth-screen{
+position:fixed;
+inset:0;
+background:#0f172a;
+display:flex;
+justify-content:center;
+align-items:center;
+flex-direction:column;
+gap:15px;
+}
+.auth-screen input{
+padding:12px;
+width:250px;
+border:none;
+border-radius:10px;
+}
+.auth-screen button{
+padding:12px;
+width:250px;
+border:none;
+border-radius:10px;
+background:#7c3aed;
+color:white;
+cursor:pointer;
+}
+
+/* APP */
+.sidebar{width:300px;background:#111827;display:flex;flex-direction:column;}
+.sidebar-header{padding:15px;font-size:20px;background:#0b1220;}
+.search-box{padding:10px;background:#0b1220;}
+.search-box input{width:100%;padding:8px;border-radius:10px;border:none;}
+.chat-list{flex:1;overflow:auto;}
+.chat-item{padding:12px;cursor:pointer;border-bottom:1px solid rgba(255,255,255,0.1);}
+.chat-item:hover{background:#1f2937;}
+
+.bottom-menu{padding:10px;display:flex;flex-direction:column;gap:10px;}
+.button{padding:10px;border:none;border-radius:10px;cursor:pointer;background:#7c3aed;color:white;}
+
+.main{flex:1;display:flex;flex-direction:column;}
+.chat-header{padding:15px;background:#0b1220;}
+.messages{flex:1;padding:15px;overflow:auto;}
+.message{background:#7c3aed;padding:10px;border-radius:10px;margin-bottom:10px;max-width:60%;}
+.input-area{display:flex;padding:10px;background:#0b1220;gap:10px;}
+.input-area input{flex:1;padding:10px;border-radius:10px;border:none;}
+</style>
+</head>
+<body>
+
+<!-- AUTH -->
+<div class="auth-screen" id="authScreen">
+<h2>Wiwans 💜</h2>
+<input id="authNick" placeholder="Ник">
+<input id="authPass" type="password" placeholder="Пароль">
+<button onclick="register()">Регистрация</button>
+<button onclick="login()">Войти</button>
+</div>
+
+<!-- APP -->
+<div class="sidebar">
+<div class="sidebar-header">💜 Wiwans</div>
+
+<div class="search-box">
+<input id="searchInput" placeholder="Поиск пользователей..." onkeyup="searchUsers()">
+</div>
+
+<div class="chat-list" id="userList"></div>
+
+<div class="bottom-menu">
+<button class="button" onclick="openSettings()">⚙ Настройки</button>
+</div>
+</div>
+
+<div class="main">
+<div class="chat-header" id="chatName">Выберите пользователя</div>
+<div class="messages" id="messages"></div>
+<div class="input-area">
+<input id="msgInput" placeholder="Сообщение...">
+<button class="button" onclick="sendMessage()">Отправить</button>
+</div>
+</div>
+
+<script>
+
+// ====== ДАННЫЕ ======
+let users = JSON.parse(localStorage.getItem("users")) || {};
+let currentUser = localStorage.getItem("currentUser") || null;
+let currentChat = null;
+
+function save(){
+localStorage.setItem("users", JSON.stringify(users));
+localStorage.setItem("currentUser", currentUser);
+}
+
+// ====== АВТОРИЗАЦИЯ ======
+
+function register(){
+let nick = document.getElementById("authNick").value.trim();
+let pass = document.getElementById("authPass").value.trim();
+
+if(!nick || !pass) return alert("Заполни поля");
+if(users[nick]) return alert("Ник уже существует");
+
+users[nick] = {password:pass};
+currentUser = nick;
+save();
+startApp();
+}
+
+function login(){
+let nick = document.getElementById("authNick").value.trim();
+let pass = document.getElementById("authPass").value.trim();
+
+if(!users[nick]) return alert("Пользователь не найден");
+if(users[nick].password !== pass) return alert("Неверный пароль");
+
+currentUser = nick;
+save();
+startApp();
+}
+
+function logout(){
+currentUser = null;
+localStorage.removeItem("currentUser");
+location.reload();
+}
+
+// ====== ЗАПУСК ПРИЛОЖЕНИЯ ======
+
+function startApp(){
+document.getElementById("authScreen").style.display="none";
+renderUsers();
+}
+
+if(currentUser){
+startApp();
+}
+
+// ====== СПИСОК ПОЛЬЗОВАТЕЛЕЙ ======
+
+function renderUsers(){
+let list = document.getElementById("userList");
+list.innerHTML = "";
+
+Object.keys(users).forEach(nick=>{
+if(nick === currentUser) return;
+
+list.innerHTML += `
+<div class="chat-item" onclick="openChat('${nick}')">
+${nick}
+</div>`;
+});
+}
+
+function searchUsers(){
+let value = document.getElementById("searchInput").value.toLowerCase();
+let items = document.querySelectorAll(".chat-item");
+
+items.forEach(item=>{
+item.style.display = item.innerText.toLowerCase().includes(value)
+? "block"
+: "none";
+});
+}
+
+// ====== ЧАТ ======
+
+function openChat(nick){
+currentChat = nick;
+document.getElementById("chatName").innerText = nick;
+document.getElementById("messages").innerHTML = "";
+}
+
+function sendMessage(){
+if(!currentChat) return alert("Выберите пользователя");
+
+let input = document.getElementById("msgInput");
+if(!input.value) return;
+
+let msg = document.createElement("div");
+msg.className = "message";
+msg.innerText = currentUser + ": " + input.value;
+
+document.getElementById("messages").appendChild(msg);
+input.value = "";
+}
+
+// ====== НАСТРОЙКИ ======
+
+function openSettings(){
+let action = prompt(
+`1 - Сменить аккаунт
+2 - Выйти`
+);
+
+if(action == 1){
+currentUser = null;
+localStorage.removeItem("currentUser");
+location.reload();
+}
+if(action == 2){
+logout();
+}
+}
+
+</script>
+
+</body>
+</html>
